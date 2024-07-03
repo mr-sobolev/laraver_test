@@ -1,0 +1,113 @@
+# 
+#  FILE TO WORK WITH DOCKER-COMPOSE 
+#  create by mr_sobol
+#
+
+services:
+    db:
+       image: postgres
+       restart: always
+       # shared memory limit in this container
+       shm_size: 256 mb
+       volumes:
+         - ./db:/var/lib/postgresql/data
+       environment:
+         POSTGRES_PASSWORD: test_task_!
+       networks:
+          datanet:
+           ipv4_address: 172.19.0.2
+    adminer:
+       image: adminer
+       restart: always
+       ports:
+         - 9009:8080
+       depends_on:
+         - db
+       networks:
+         datanet:
+            ipv4_address: 172.19.0.3
+    rabbitmq:
+        image: rabbitmq:3.13.3-management
+        hostname: rabbitmq
+        restart: always
+        depends_on:
+         - db
+        environment:
+         - RABBITMQ_DEFAULT_USER=admin
+         - RABBITMQ_DEFAULT_PASS=test_task_!
+         - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit disk_free_limit 2147483648
+        volumes:
+         - ./rabbitmq:/var/lib/rabbitmq
+        ports:
+         - 16662:15672
+        networks:
+          datanet:
+           ipv4_address: 172.19.0.4
+    app:
+        build:
+          args:
+            user: web
+            uid: 1000
+          context: ./laravel_api
+          dockerfile: Dockerfile
+        depends_on:
+         - db
+        image: laravel_api
+        container_name: laravel_api-app
+        restart: always
+        working_dir: /var/www/
+        volumes:
+          - ./laravel_api/www:/var/www
+        networks:
+          datanet:
+           ipv4_address: 172.19.0.5
+    nginx:
+        image: nginx:1.27.0-alpine
+        container_name: laravel_api-nginx
+        restart: always
+        depends_on:
+         - app
+        ports:
+          - 8000:80
+        volumes:
+           - ./laravel_api/www:/var/www
+           - ./nginx:/etc/nginx/conf.d
+        networks:
+          datanet:
+           ipv4_address: 172.19.0.6
+    redis:
+        image: redis:7.2.5-alpine
+        environment:
+         - ALLOW_EMPTY_PASSWORD=yes
+         - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+        ports:
+          - 6679:6379
+        volumes:
+          - ./redis:/bitnami/redis/data
+        networks:
+          datanet:
+           ipv4_address: 172.19.0.7
+    supervisor:
+        build:
+          context: ./supervisor
+          dockerfile: Dockerfile
+        depends_on:
+         - nginx
+        image: supervisor_api
+        container_name: supervisor_api-app
+        restart: always
+        working_dir: /var/www/
+        volumes:
+          - ./laravel_api/www:/var/www
+        networks:
+          datanet:
+           ipv4_address: 172.19.0.8
+
+networks:
+  datanet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      - subnet: 172.19.0.0/24
+        gateway: 172.19.0.1

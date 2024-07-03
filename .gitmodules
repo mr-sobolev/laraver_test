@@ -1,0 +1,3 @@
+[submodule "laravel_api/www"]
+	path = laravel_api/www
+	url = https://github.com/mr-sobolev/www.git
