@@ -36,8 +36,6 @@ services:
          - RABBITMQ_DEFAULT_USER=admin
          - RABBITMQ_DEFAULT_PASS=test_task_!
          - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit disk_free_limit 2147483648
-        volumes:
-         - ./rabbitmq:/var/lib/rabbitmq
         ports:
          - 16662:15672
         networks:
