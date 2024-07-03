@@ -51,9 +51,10 @@ Credentials
     Password: test_task_!
 ```
 **Create Databases**
+```
 laravel_db_api
 laravel_db_fdw_api
-
+```
 **Run Migrations**
 
 ```
